@@ -1,4 +1,4 @@
-# `pydantic-dbmodel-core`
+# Pydantic DbModel Core
 
 ## Overview
 
