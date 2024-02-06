@@ -1,4 +1,5 @@
 """Private logic for creating models."""
+
 from __future__ import annotations as _annotations
 from pydantic._internal._model_construction import (
     ModelMetaclass,
@@ -128,8 +129,8 @@ class DbModelMeta(ModelMetaclass, ABCMeta):
                 **private_attributes,
             }
 
-            if config_wrapper.frozen:
-                set_default_hash_func(namespace, bases)
+            # if config_wrapper.frozen:
+            #     set_default_hash_func(namespace, bases)
 
             cls: type[DbModelCore] = ABCMeta.__new__(mcs, cls_name, bases, namespace, **kwargs)  # type: ignore
 
@@ -214,6 +215,10 @@ class DbModelMeta(ModelMetaclass, ABCMeta):
 
             types_namespace = get_cls_types_namespace(cls, parent_namespace)
             set_model_fields(cls, bases, config_wrapper, types_namespace)
+
+            if config_wrapper.frozen and "__hash__" not in namespace:
+                set_default_hash_func(cls, bases)
+
             complete_model_class(
                 cls,
                 cls_name,
@@ -222,6 +227,10 @@ class DbModelMeta(ModelMetaclass, ABCMeta):
                 types_namespace=types_namespace,
                 create_model_module=_create_model_module,
             )
+            # If this is placed before the complete_model_class call above,
+            # the generic computed fields return type is set to PydanticUndefined
+            cls.model_computed_fields = {k: v.info for k, v in cls.__pydantic_decorators__.computed_fields.items()}
+
             # using super(cls, cls) on the next line ensures we only call the parent class's __pydantic_init_subclass__
             # I believe the `type: ignore` is only necessary because mypy doesn't realize that this code branch is
             # only hit for _proper_ subclasses of BaseModel
